@@ -1,0 +1,13 @@
+name: hla-snake
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - arcas-hla
+  - snakemake
+  - python==3.11
+  - pandas
+  - biopython
+  - pyyaml
+

@@ -1,0 +1,40 @@
+# HLA typing pipeline configuration
+
+# Sample list
+samples:
+  - P029_D3
+  - P029_D7_HIMC
+  - P253_D3
+  - P253_D28_HIMC
+  - P418_D28
+  - P458_D0
+  - P300_D0
+  - P300_D3
+  - P300_D7
+  - P300_D28_HIMC
+  - P300_D3_noSorting_R1
+  - P300_D3_noSorting_R2
+  - P300_D3_PI_R1
+  - P300_D3_PI_R2
+  - P300_D3_PI_R3
+  - P300_D3_GD_R1
+  - P300_D3_GD_R3
+  - P418_D0
+  - P418_D0_FACS
+  - P458_D3
+  - P458_D7
+  - P458_D28
+  - P452_D0
+  - P452_D3
+  - P452_D7
+  - P452_D28
+
+# Input file root (per-sample 10x Cell Ranger outputs)
+bam_dir: "/sc/arion/scratch/chos14/NYU/withBAM2025"
+
+# Output directories
+hla_output_dir: "/sc/arion/projects/scMultiscale/chos14/NYU/05_HLA/"
+merged_output_dir: "/sc/arion/projects/scMultiscale/chos14/NYU/05_HLA/merged"
+
+# Execution options
+threads: 16
