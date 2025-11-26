@@ -91,7 +91,8 @@ def summarize(input_path: str, output_path: str) -> None:
         entries = _extract_vdjdb_entries(row)
         if not entries:
             continue
-        n_cells = float(row.get("n_cells", 0) or 0)
+        n_cells_raw = row.get("n_cells", 0)
+        n_cells = 0.0 if pd.isna(n_cells_raw) else float(n_cells_raw)
         used_clonotype = set()
         for locus in HLA_LOCI:
             col1 = f"HLA_{locus}_allele1"
@@ -110,8 +111,8 @@ def summarize(input_path: str, output_path: str) -> None:
                     )
                     if key not in used_clonotype:
                         summary_counter[key]["n_clonotypes"] += 1
+                        summary_counter[key]["n_cells"] += n_cells
                         used_clonotype.add(key)
-                    summary_counter[key]["n_cells"] += n_cells
 
     records: List[Dict[str, object]] = []
     for key, metrics in summary_counter.items():

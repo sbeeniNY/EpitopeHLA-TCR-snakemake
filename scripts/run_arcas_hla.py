@@ -202,22 +202,39 @@ def convert_json_to_tsv(json_file, tsv_file, sample_id):
     # List of HLA loci
     loci = ['A', 'B', 'C', 'DRB1', 'DQA1', 'DQB1', 'DPA1', 'DPB1']
     
+    def _two_field(locus_name, allele_value):
+        allele_value = str(allele_value or "").strip()
+        if not allele_value:
+            return None
+        if "*" in allele_value:
+            allele_locus, allele_fields = allele_value.split("*", 1)
+        else:
+            allele_locus, allele_fields = locus_name, allele_value
+        fields = [part for part in allele_fields.split(":") if part]
+        if not fields:
+            return None
+        trimmed = ":".join(fields[:2])
+        locus_token = allele_locus or locus_name
+        return f"{locus_token}*{trimmed}"
+
     results = []
     for locus in loci:
         if locus in data:
             alleles = data[locus]
-            # Convert to a 2-field level (e.g., A*01:01:01:01 -> A*01:01)
-            if isinstance(alleles, list) and len(alleles) >= 2:
-                allele1 = alleles[0].split(':')[:2]  # Keep only the first two fields
-                allele2 = alleles[1].split(':')[:2]
-                allele1_str = f"{locus}*{':'.join(allele1)}"
-                allele2_str = f"{locus}*{':'.join(allele2)}"
-                results.append({
-                    'sample_id': sample_id,
-                    'locus': locus,
-                    'allele1': allele1_str,
-                    'allele2': allele2_str
-                })
+            if not isinstance(alleles, list):
+                alleles = [alleles]
+            trimmed = [_two_field(locus, allele) for allele in alleles]
+            trimmed = [allele for allele in trimmed if allele]
+            if not trimmed:
+                continue
+            allele1_str = trimmed[0]
+            allele2_str = trimmed[1] if len(trimmed) >= 2 else trimmed[0]
+            results.append({
+                'sample_id': sample_id,
+                'locus': locus,
+                'allele1': allele1_str,
+                'allele2': allele2_str
+            })
     
     # Save as TSV
     import pandas as pd

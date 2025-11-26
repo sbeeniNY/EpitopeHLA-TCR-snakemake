@@ -3,6 +3,7 @@ Snakemake pipeline: HLA typing and TCR-HLA merging
 """
 import os
 from pathlib import Path
+from snakemake.exceptions import WorkflowError
 
 # Load configuration file
 configfile: "config.yaml"
@@ -18,7 +19,13 @@ SCRIPTS_DIR = "scripts"
 THREADS = int(config.get("threads", 16))
 CONDA_ENV = "hla-snake"
 CONDA_INIT = "/hpc/packages/minerva-rocky9/anaconda3/2025.06/etc/profile.d/conda.sh"
-VDJDB_PATH = config.get("vdjdb_path", "resources/vdjdb/vdjdb.txt")
+VDJDB_PATH = config["vdjdb_path"]
+
+if not Path(VDJDB_PATH).exists():
+    raise WorkflowError(
+        f"VDJdb reference not found: {VDJDB_PATH}. "
+        "Please download the file and update vdjdb_path in config.yaml."
+    )
 
 
 def get_count_bam(sample_id):
@@ -73,7 +80,10 @@ def get_hla_epitope_summary(sample_id):
 rule all:
     input:
         # Produce the final HLA-epitope summary
-        expand(get_hla_epitope_summary, sample=SAMPLES)
+        expand(
+            os.path.join(MERGED_OUTPUT_DIR, "{sample}_hla_epitope_summary.tsv"),
+            sample=SAMPLES,
+        )
 
 
 rule hla_typing:
@@ -139,7 +149,7 @@ rule summarize_clonotypes:
     input:
         merged=os.path.join(MERGED_OUTPUT_DIR, "{sample}_tcr_hla.tsv")
     output:
-        summary=lambda wildcards: get_clonotype_summary(wildcards.sample)
+        summary=os.path.join(MERGED_OUTPUT_DIR, "{sample}_clonotype_summary.tsv")
     shell:
         """
         ml proxies || true
@@ -157,10 +167,12 @@ rule annotate_vdjdb:
     Annotate clonotype summary with public epitopes using VDJdb
     """
     input:
-        summary=lambda wildcards: get_clonotype_summary(wildcards.sample),
+        summary=os.path.join(MERGED_OUTPUT_DIR, "{sample}_clonotype_summary.tsv"),
         vdjdb=VDJDB_PATH
     output:
-        annotated=lambda wildcards: get_vdjdb_summary(wildcards.sample)
+        annotated=os.path.join(
+            MERGED_OUTPUT_DIR, "{sample}_clonotype_summary.vdjdb.tsv"
+        )
     shell:
         """
         ml proxies || true
@@ -179,9 +191,11 @@ rule summarize_hla_epitopes:
     Summarize at the HLA-epitope level
     """
     input:
-        annotated=lambda wildcards: get_vdjdb_summary(wildcards.sample)
+        annotated=os.path.join(
+            MERGED_OUTPUT_DIR, "{sample}_clonotype_summary.vdjdb.tsv"
+        )
     output:
-        epitope=lambda wildcards: get_hla_epitope_summary(wildcards.sample)
+        epitope=os.path.join(MERGED_OUTPUT_DIR, "{sample}_hla_epitope_summary.tsv")
     shell:
         """
         ml proxies || true
